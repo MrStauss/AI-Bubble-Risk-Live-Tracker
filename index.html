@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bubble Health Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            position: relative;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('resources/hero-bg.jpg') center/cover;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .risk-gauge {
+            width: 300px;
+            height: 300px;
+        }
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+        .ticker-item {
+            transition: all 0.2s ease;
+        }
+        .ticker-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #00d4ff, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #00d4ff;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .alert-badge {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold gradient-text">AI Bubble Dashboard</div>
+                    <div class="hidden md:flex items-center space-x-2">
+                        <span class="text-sm text-gray-400">Risk Score:</span>
+                        <span id="nav-risk-score" class="text-lg font-bold text-yellow-400">67</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-white font-medium">Executive Summary</a>
+                    <a href="fundamentals.html" class="nav-link text-gray-300 hover:text-white">Fundamentals</a>
+                    <a href="options.html" class="nav-link text-gray-300 hover:text-white">Options Risk</a>
+                    <a href="exposure.html" class="nav-link text-gray-300 hover:text-white">Exposure Map</a>
+                    <a href="sentiment.html" class="nav-link text-gray-300 hover:text-white">Sentiment</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Configuration Toggle Button -->
+    <button id="config-toggle" class="fixed top-24 right-6 z-50 glass-card rounded-full p-3 hover:bg-blue-600/20 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+    </button>
+
+    <!-- Hero Section -->
+    <section class="hero-bg min-h-screen flex items-center justify-center relative pt-20">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <!-- Risk Score Dial -->
+            <div class="flex flex-col items-center">
+                <div class="glass-card rounded-3xl p-8 mb-6">
+                    <div class="text-center mb-4">
+                        <h2 class="text-2xl font-bold mb-2">Bubble Risk Score</h2>
+                        <div class="text-sm text-gray-400">Real-time AI bubble assessment</div>
+                    </div>
+                    <div id="risk-gauge" class="risk-gauge mx-auto"></div>
+                    <div class="text-center mt-4">
+                        <div id="regime-label" class="text-xl font-bold text-yellow-400 mb-2">Late-Cycle Froth</div>
+                        <div class="text-sm text-gray-400">Current Market Regime</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="space-y-6">
+                <div class="glass-card rounded-2xl p-6 metric-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Market Breadth</h3>
+                        <div class="w-3 h-3 bg-red-500 rounded-full pulse"></div>
+                    </div>
+                    <div class="text-3xl font-bold mono text-red-400">-12.3%</div>
+                    <div class="text-sm text-gray-400 mt-2">% of AI stocks above 50-day MA</div>
+                    <div class="mt-3 text-xs text-red-300">↓ 8.7% from yesterday</div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6 metric-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Options Skew</h3>
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full pulse"></div>
+                    </div>
+                    <div class="text-3xl font-bold mono text-yellow-400">+2.1%</div>
+                    <div class="text-sm text-gray-400 mt-2">Put/Call IV spread</div>
+                    <div class="mt-3 text-xs text-yellow-300">↑ Crash premium rising</div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6 metric-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">NVDA vs SOXX</h3>
+                        <div class="w-3 h-3 bg-orange-500 rounded-full pulse"></div>
+                    </div>
+                    <div class="text-3xl font-bold mono text-orange-400">+8.7%</div>
+                    <div class="text-sm text-gray-400 mt-2">Relative strength</div>
+                    <div class="mt-3 text-xs text-orange-300">↑ Outperformance accelerating</div>
+                </div>
+            </div>
+
+            <!-- Top Drivers & Alerts -->
+            <div class="space-y-6">
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Top Risk Drivers Today</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-3 bg-red-500/10 rounded-lg">
+                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">FCF Margin Deterioration</div>
+                                <div class="text-xs text-gray-400">ORCL, CRWV showing negative trends</div>
+                            </div>
+                            <div class="text-xs text-red-400">+12 pts</div>
+                        </div>
+                        <div class="flex items-center space-x-3 p-3 bg-orange-500/10 rounded-lg">
+                            <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">Leverage Froth</div>
+                                <div class="text-xs text-gray-400">SOXL outperforming SOXX by 15%</div>
+                            </div>
+                            <div class="text-xs text-orange-400">+8 pts</div>
+                        </div>
+                        <div class="flex items-center space-x-3 p-3 bg-yellow-500/10 rounded-lg">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">Sentiment Crowding</div>
+                                <div class="text-xs text-gray-400">"Infinite TAM" narrative intensity</div>
+                            </div>
+                            <div class="text-xs text-yellow-400">+5 pts</div>
+                        </div>
+                        <div class="flex items-center space-x-3 p-3 bg-blue-500/10 rounded-lg">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium">Credit Spreads</div>
+                                <div class="text-xs text-gray-400">HY spreads widening vs Treasuries</div>
+                            </div>
+                            <div class="text-xs text-blue-400">+3 pts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Live Alerts</h3>
+                        <div class="alert-badge w-3 h-3 bg-red-500 rounded-full"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                            <div class="text-sm font-medium text-red-300">High Risk Threshold Breached</div>
+                            <div class="text-xs text-gray-400 mt-1">Risk score exceeded 70 - Consider reducing leverage</div>
+                        </div>
+                        <div class="p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                            <div class="text-sm font-medium text-yellow-300">Options Complacency Alert</div>
+                            <div class="text-xs text-gray-400 mt-1">IV falling while prices rise - Bubble risk rising</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7-Day Trend Section -->
+    <section class="py-16 bg-gray-900/50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="glass-card rounded-3xl p-8">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-3xl font-bold">7-Day Risk Score Trend</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span class="text-sm text-gray-400">High Risk (>70)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span class="text-sm text-gray-400">Medium Risk (35-70)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-400">Low Risk (<35)</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="trend-chart" style="height: 400px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Watchlist Heatmap -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="glass-card rounded-3xl p-8">
+                <h2 class="text-3xl font-bold mb-8">Watchlist Risk Heatmap</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">NVDA</div>
+                        <div class="text-2xl font-bold text-red-400 mt-2">85</div>
+                        <div class="text-xs text-gray-400">Extreme Risk</div>
+                        <div class="mt-2 text-xs text-red-300">+12% today</div>
+                    </div>
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">MSFT</div>
+                        <div class="text-2xl font-bold text-yellow-400 mt-2">45</div>
+                        <div class="text-xs text-gray-400">Medium Risk</div>
+                        <div class="mt-2 text-xs text-green-300">-2% today</div>
+                    </div>
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">AMD</div>
+                        <div class="text-2xl font-bold text-orange-400 mt-2">72</div>
+                        <div class="text-xs text-gray-400">High Risk</div>
+                        <div class="mt-2 text-xs text-red-300">+8% today</div>
+                    </div>
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">ORCL</div>
+                        <div class="text-2xl font-bold text-red-400 mt-2">78</div>
+                        <div class="text-xs text-gray-400">High Risk</div>
+                        <div class="mt-2 text-xs text-red-300">+5% today</div>
+                    </div>
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">SOXL</div>
+                        <div class="text-2xl font-bold text-red-500 mt-2">92</div>
+                        <div class="text-xs text-gray-400">Extreme Risk</div>
+                        <div class="mt-2 text-xs text-red-300">+18% today</div>
+                    </div>
+                    <div class="ticker-item glass-card rounded-xl p-4 text-center cursor-pointer">
+                        <div class="text-lg font-bold mono">TECL</div>
+                        <div class="text-2xl font-bold text-red-400 mt-2">88</div>
+                        <div class="text-xs text-gray-400">Extreme Risk</div>
+                        <div class="mt-2 text-xs text-red-300">+15% today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-gray-900/50 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="text-gray-400 mb-4">
+                <p class="text-sm">AI Bubble Health Dashboard - Real-time market risk assessment</p>
+                <p class="text-xs mt-2">Data sources: Yahoo Finance, Alpha Vantage, NewsAPI | Last updated: <span id="last-updated">2025-12-16 15:30:00</span></p>
+            </div>
+            <div class="flex justify-center space-x-6 text-xs text-gray-500">
+                <span>© 2025 AI Bubble Dashboard</span>
+                <span>•</span>
+                <span>For educational purposes only</span>
+                <span>•</span>
+                <span>Not investment advice</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

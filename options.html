@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Options & Crash Risk - AI Bubble Health Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #00d4ff, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #00d4ff;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .options-card {
+            transition: all 0.3s ease;
+        }
+        .options-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+        .crash-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold gradient-text">AI Bubble Dashboard</div>
+                    <div class="hidden md:flex items-center space-x-2">
+                        <span class="text-sm text-gray-400">Risk Score:</span>
+                        <span id="nav-risk-score" class="text-lg font-bold text-yellow-400">67</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-300 hover:text-white">Executive Summary</a>
+                    <a href="fundamentals.html" class="nav-link text-gray-300 hover:text-white">Fundamentals</a>
+                    <a href="options.html" class="nav-link text-white font-medium">Options Risk</a>
+                    <a href="exposure.html" class="nav-link text-gray-300 hover:text-white">Exposure Map</a>
+                    <a href="sentiment.html" class="nav-link text-gray-300 hover:text-white">Sentiment</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <section class="pt-24 pb-12 bg-gradient-to-br from-gray-900 to-black">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold gradient-text mb-4">Options & Crash Risk Analysis</h1>
+                <p class="text-xl text-gray-400">Implied volatility, skew, and hedging demand indicators</p>
+            </div>
+            
+            <!-- Key Indicators -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass-card rounded-2xl p-6 options-card">
+                    <h3 class="text-lg font-semibold mb-2">Market IV Level</h3>
+                    <div class="text-3xl font-bold mono text-green-400">18.2%</div>
+                    <div class="text-sm text-gray-400 mt-2">VIX equivalent</div>
+                    <div class="mt-3 text-xs text-red-300">↓ 4.1 pts (Complacency)</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 options-card">
+                    <h3 class="text-lg font-semibold mb-2">Skew Index</h3>
+                    <div class="text-3xl font-bold mono text-yellow-400">127.5</div>
+                    <div class="text-sm text-gray-400 mt-2">25-delta put/call</div>
+                    <div class="mt-3 text-xs text-yellow-300">↑ Crash premium rising</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 options-card">
+                    <h3 class="text-lg font-semibold mb-2">Put/Call Ratio</h3>
+                    <div class="text-3xl font-bold mono text-red-400">0.73</div>
+                    <div class="text-sm text-gray-400 mt-2">All exchanges</div>
+                    <div class="mt-3 text-xs text-red-300">↓ Euphoric levels</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 options-card">
+                    <h3 class="text-lg font-semibold mb-2">Crash Risk Gauge</h3>
+                    <div class="text-3xl font-bold mono text-orange-400">Elevated</div>
+                    <div class="text-sm text-gray-400 mt-2">Composite indicator</div>
+                    <div class="mt-3 text-xs text-orange-300">↑ Smart money hedging</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- IV Surface Analysis -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold">Implied Volatility Surface</h2>
+                    <div class="flex items-center space-x-4">
+                        <select id="iv-symbol" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                            <option value="SPX">S&P 500 (SPX)</option>
+                            <option value="QQQ">NASDAQ 100 (QQQ)</option>
+                            <option value="NVDA">NVIDIA (NVDA)</option>
+                            <option value="MSFT">Microsoft (MSFT)</option>
+                        </select>
+                        <select id="iv-expiry" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                            <option value="30">30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="iv-surface-chart" style="height: 500px;"></div>
+            </div>
+
+            <!-- Skew Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-xl font-bold mb-6">Volatility Skew Analysis</h3>
+                    <div id="skew-chart" style="height: 400px;"></div>
+                </div>
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-xl font-bold mb-6">Term Structure</h3>
+                    <div id="term-structure-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- Put/Call Analysis -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <h2 class="text-2xl font-bold mb-8">Put/Call Ratio Trends</h2>
+                <div id="put-call-chart" style="height: 400px;"></div>
+            </div>
+
+            <!-- Crash Indicators -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <h2 class="text-2xl font-bold mb-8">Crash Risk Indicators</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="p-6 bg-red-500/10 border border-red-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-red-300">Smart Money Hedging</h4>
+                            <div class="w-3 h-3 bg-red-500 rounded-full crash-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-red-400">High</div>
+                        <div class="text-sm text-gray-400 mt-2">Institutional put buying</div>
+                        <div class="mt-3 text-xs text-red-300">↑ 156% vs 20-day avg</div>
+                    </div>
+
+                    <div class="p-6 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-orange-300">Gamma Exposure</h4>
+                            <div class="w-3 h-3 bg-orange-500 rounded-full crash-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-orange-400">-$2.1B</div>
+                        <div class="text-sm text-gray-400 mt-2">Net negative gamma</div>
+                        <div class="mt-3 text-xs text-orange-300">↑ Volatility amplification</div>
+                    </div>
+
+                    <div class="p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-yellow-300">VVIX</h4>
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full crash-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-yellow-400">112.5</div>
+                        <div class="text-sm text-gray-400 mt-2">Vol of vol</div>
+                        <div class="mt-3 text-xs text-yellow-300">↑ Uncertainty rising</div>
+                    </div>
+
+                    <div class="p-6 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-purple-300">Skew Kurtosis</h4>
+                            <div class="w-3 h-3 bg-purple-500 rounded-full crash-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-purple-400">3.2</div>
+                        <div class="text-sm text-gray-400 mt-2">Tail risk measure</div>
+                        <div class="mt-3 text-xs text-purple-300">↑ Fat tail risk</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options Flow Analysis -->
+            <div class="glass-card rounded-3xl p-8">
+                <h2 class="text-2xl font-bold mb-8">Options Flow Analysis</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Large Trades (>$1M)</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-red-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">SPY Put Sweep</div>
+                                    <div class="text-xs text-gray-400">$2.3M • 4,500 contracts • 480 strike</div>
+                                </div>
+                                <div class="text-xs text-red-400">Bearish</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-green-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">QQQ Call Block</div>
+                                    <div class="text-xs text-gray-400">$1.8M • 3,200 contracts • 380 strike</div>
+                                </div>
+                                <div class="text-xs text-green-400">Bullish</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-red-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">NVDA Put Spread</div>
+                                    <div class="text-xs text-gray-400">$3.1M • 2,800 contracts • 850/800</div>
+                                </div>
+                                <div class="text-xs text-red-400">Hedging</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Unusual Activity</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-orange-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">SOXL Put Buying</div>
+                                    <div class="text-xs text-gray-400">2,847% vs avg • 25 strike</div>
+                                </div>
+                                <div class="text-xs text-orange-400">Leverage Hedge</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">VIX Call Accumulation</div>
+                                    <div class="text-xs text-gray-400">892% vs avg • 25 strike</div>
+                                </div>
+                                <div class="text-xs text-yellow-400">Vol Hedge</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-purple-500/10 rounded-lg">
+                                <div>
+                                    <div class="text-sm font-medium">XLK Ratio Spread</div>
+                                    <div class="text-xs text-gray-400">1,456% vs avg • Complex</div>
+                                </div>
+                                <div class="text-xs text-purple-400">Income</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-gray-900/50 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="text-gray-400 mb-4">
+                <p class="text-sm">AI Bubble Health Dashboard - Real-time market risk assessment</p>
+                <p class="text-xs mt-2">Data sources: Yahoo Finance, Alpha Vantage, NewsAPI | Last updated: <span id="last-updated">2025-12-16 15:30:00</span></p>
+            </div>
+            <div class="flex justify-center space-x-6 text-xs text-gray-500">
+                <span>© 2025 AI Bubble Dashboard</span>
+                <span>•</span>
+                <span>For educational purposes only</span>
+                <span>•</span>
+                <span>Not investment advice</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeIVSurfaceChart();
+            initializeSkewChart();
+            initializeTermStructureChart();
+            initializePutCallChart();
+            initializeAnimations();
+        });
+
+        function initializeIVSurfaceChart() {
+            const chart = echarts.init(document.getElementById('iv-surface-chart'));
+            
+            // Generate sample IV surface data
+            const strikes = [];
+            const expiries = ['1W', '2W', '1M', '2M', '3M'];
+            const data = [];
+            
+            for (let i = 0; i < 20; i++) {
+                strikes.push((0.8 + i * 0.025).toFixed(2));
+            }
+            
+            for (let i = 0; i < strikes.length; i++) {
+                for (let j = 0; j < expiries.length; j++) {
+                    const baseIV = 0.18;
+                    const skew = (i - strikes.length/2) * 0.02;
+                    const term = j * 0.01;
+                    const iv = baseIV + skew + term + (Math.random() - 0.5) * 0.02;
+                    data.push([i, j, (iv * 100).toFixed(1)]);
+                }
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    position: 'top',
+                    formatter: function(params) {
+                        return `Strike: ${strikes[params.data[0]]}<br/>Expiry: ${expiries[params.data[1]]}<br/>IV: ${params.data[2]}%`;
+                    }
+                },
+                grid3D: {
+                    viewControl: {
+                        projection: 'perspective'
+                    }
+                },
+                xAxis3D: {
+                    type: 'category',
+                    data: strikes,
+                    name: 'Strike Price'
+                },
+                yAxis3D: {
+                    type: 'category',
+                    data: expiries,
+                    name: 'Expiry'
+                },
+                zAxis3D: {
+                    type: 'value',
+                    name: 'Implied Volatility (%)'
+                },
+                visualMap: {
+                    max: 25,
+                    min: 15,
+                    calculable: true,
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'top',
+                    inRange: {
+                        color: ['#4ecdc4', '#00d4ff', '#ffb800', '#ff6b6b']
+                    }
+                },
+                series: [{
+                    type: 'surface3D',
+                    data: data,
+                    shading: 'color'
+                }]
+            };
+            
+            chart.setOption(option);
+        }
+
+        function initializeSkewChart() {
+            const chart = echarts.init(document.getElementById('skew-chart'));
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ['10Δ', '25Δ', '40Δ', '50Δ', '60Δ', '75Δ', '90Δ'],
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Implied Volatility',
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [
+                    {
+                        name: 'Current',
+                        type: 'line',
+                        data: [22.5, 20.1, 18.9, 18.2, 17.8, 17.2, 16.8],
+                        lineStyle: { color: '#00d4ff', width: 3 },
+                        itemStyle: { color: '#00d4ff' }
+                    },
+                    {
+                        name: 'Historical Avg',
+                        type: 'line',
+                        data: [19.8, 18.5, 17.9, 17.5, 17.2, 16.9, 16.5],
+                        lineStyle: { color: '#6c757d', type: 'dashed' },
+                        itemStyle: { color: '#6c757d' }
+                    }
+                ]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeTermStructureChart() {
+            const chart = echarts.init(document.getElementById('term-structure-chart'));
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ['1W', '2W', '1M', '2M', '3M', '6M', '1Y'],
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Implied Volatility',
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [
+                    {
+                        name: 'Current',
+                        type: 'line',
+                        data: [16.2, 17.8, 18.5, 19.2, 19.8, 20.5, 21.2],
+                        lineStyle: { color: '#ffb800', width: 3 },
+                        itemStyle: { color: '#ffb800' }
+                    },
+                    {
+                        name: 'Normal',
+                        type: 'line',
+                        data: [18.5, 19.2, 19.8, 20.1, 20.3, 20.5, 20.8],
+                        lineStyle: { color: '#4ecdc4', type: 'dashed' },
+                        itemStyle: { color: '#4ecdc4' }
+                    }
+                ]
+            };
+            chart.setOption(option);
+        }
+
+        function initializePutCallChart() {
+            const chart = echarts.init(document.getElementById('put-call-chart'));
+            const dates = [];
+            const putCallData = [];
+            const today = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+                putCallData.push((0.6 + Math.random() * 0.4).toFixed(2));
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Put/Call Ratio',
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [{
+                    data: putCallData,
+                    type: 'line',
+                    smooth: true,
+                    lineStyle: { color: '#ff6b6b', width: 3 },
+                    itemStyle: { color: '#ff6b6b' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(255, 107, 107, 0.3)' },
+                                { offset: 1, color: 'rgba(255, 107, 107, 0.05)' }
+                            ]
+                        }
+                    },
+                    markLine: {
+                        silent: true,
+                        lineStyle: { color: '#4ecdc4', type: 'dashed' },
+                        data: [{
+                            yAxis: 1.0,
+                            label: { formatter: 'Neutral', color: '#4ecdc4', position: 'start' }
+                        }]
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeAnimations() {
+            const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        anime({
+                            targets: entry.target,
+                            translateY: [20, 0],
+                            opacity: [0, 1],
+                            duration: 800,
+                            easing: 'easeOutQuart'
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.options-card').forEach(card => {
+                observer.observe(card);
+            });
+        }
+
+        // Update timestamp
+        function updateLastUpdated() {
+            const element = document.getElementById('last-updated');
+            if (element) {
+                const now = new Date();
+                element.textContent = now.toISOString().replace('T', ' ').substring(0, 19);
+            }
+        }
+
+        // Initialize
+        updateLastUpdated();
+        setInterval(updateLastUpdated, 1000);
+    </script>
+</body>
+</html>

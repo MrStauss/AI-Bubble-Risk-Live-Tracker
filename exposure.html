@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sector & ETF Exposure Map - AI Bubble Health Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #00d4ff, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #00d4ff;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .exposure-card {
+            transition: all 0.3s ease;
+        }
+        .exposure-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+        .warning-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold gradient-text">AI Bubble Dashboard</div>
+                    <div class="hidden md:flex items-center space-x-2">
+                        <span class="text-sm text-gray-400">Risk Score:</span>
+                        <span id="nav-risk-score" class="text-lg font-bold text-yellow-400">67</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-300 hover:text-white">Executive Summary</a>
+                    <a href="fundamentals.html" class="nav-link text-gray-300 hover:text-white">Fundamentals</a>
+                    <a href="options.html" class="nav-link text-gray-300 hover:text-white">Options Risk</a>
+                    <a href="exposure.html" class="nav-link text-white font-medium">Exposure Map</a>
+                    <a href="sentiment.html" class="nav-link text-gray-300 hover:text-white">Sentiment</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <section class="pt-24 pb-12 bg-gradient-to-br from-gray-900 to-black">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold gradient-text mb-4">Sector & ETF Exposure Map</h1>
+                <p class="text-xl text-gray-400">Portfolio concentration and leverage analysis</p>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass-card rounded-2xl p-6 exposure-card">
+                    <h3 class="text-lg font-semibold mb-2">AI Beta Exposure</h3>
+                    <div class="text-3xl font-bold mono text-blue-400">2.4x</div>
+                    <div class="text-sm text-gray-400 mt-2">vs S&P 500</div>
+                    <div class="mt-3 text-xs text-blue-300">↑ High correlation</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 exposure-card">
+                    <h3 class="text-lg font-semibold mb-2">Leverage Ratio</h3>
+                    <div class="text-3xl font-bold mono text-red-400">4.2x</div>
+                    <div class="text-sm text-gray-400 mt-2">SOXL/TECL weighted</div>
+                    <div class="mt-3 text-xs text-red-300">↑ Extreme leverage</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 exposure-card">
+                    <h3 class="text-lg font-semibold mb-2">Concentration Risk</h3>
+                    <div class="text-3xl font-bold mono text-orange-400">High</div>
+                    <div class="text-sm text-gray-400 mt-2">Top 5 positions</div>
+                    <div class="mt-3 text-xs text-orange-300">↑ 67% of portfolio</div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 exposure-card">
+                    <h3 class="text-lg font-semibold mb-2">Hedge Effectiveness</h3>
+                    <div class="text-3xl font-bold mono text-yellow-400">Low</div>
+                    <div class="text-sm text-gray-400 mt-2">SOXS/TECS ratio</div>
+                    <div class="mt-3 text-xs text-yellow-300">↓ Poor correlation</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Exposure Spider Chart -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold">Multi-Dimensional Risk Exposure</h2>
+                    <div class="flex items-center space-x-4">
+                        <button id="portfolio-a" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            Portfolio A
+                        </button>
+                        <button id="portfolio-b" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors">
+                            Portfolio B
+                        </button>
+                    </div>
+                </div>
+                <div id="exposure-spider-chart" style="height: 500px;"></div>
+            </div>
+
+            <!-- ETF Performance Analysis -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <h2 class="text-2xl font-bold mb-8">AI ETF Performance Analysis</h2>
+                <div id="etf-performance-chart" style="height: 400px;"></div>
+            </div>
+
+            <!-- Correlation Matrix -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-xl font-bold mb-6">Correlation Heatmap</h3>
+                    <div id="correlation-heatmap" style="height: 400px;"></div>
+                </div>
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-xl font-bold mb-6">Leverage Analysis</h3>
+                    <div id="leverage-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- Concentration Warnings -->
+            <div class="glass-card rounded-3xl p-8 mb-12">
+                <h2 class="text-2xl font-bold mb-8">Concentration Risk Warnings</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="p-6 bg-red-500/10 border border-red-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-red-300">NVDA Overlap</h4>
+                            <div class="w-3 h-3 bg-red-500 rounded-full warning-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-red-400">High</div>
+                        <div class="text-sm text-gray-400 mt-2">Across 6 ETFs</div>
+                        <div class="mt-3 text-xs text-red-300">15.2% weight average</div>
+                    </div>
+
+                    <div class="p-6 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-orange-300">SOXL Leverage</h4>
+                            <div class="w-3 h-3 bg-orange-500 rounded-full warning-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-orange-400">3.2x</div>
+                        <div class="text-sm text-gray-400 mt-2">Daily exposure</div>
+                        <div class="mt-3 text-xs text-orange-300">↑ Risk amplification</div>
+                    </div>
+
+                    <div class="p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-yellow-300">TECL Beta</h4>
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full warning-indicator"></div>
+                        </div>
+                        <div class="text-2xl font-bold mono text-yellow-400">2.8x</div>
+                        <div class="text-sm text-gray-400 mt-2">vs QQQ</div>
+                        <div class="mt-3 text-xs text-yellow-300">↑ Sensitivity</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Exposure Breakdown -->
+            <div class="glass-card rounded-3xl p-8">
+                <h2 class="text-2xl font-bold mb-8">Portfolio Exposure Breakdown</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Individual Positions</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                                        <span class="text-white font-bold">NVDA</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">NVIDIA Corp</div>
+                                        <div class="text-sm text-gray-400">Individual Stock</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-red-400">8.5%</div>
+                                    <div class="text-xs text-gray-400">Portfolio weight</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <span class="text-white font-bold">SOXX</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">iShares Semiconductor</div>
+                                        <div class="text-sm text-gray-400">ETF</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-yellow-400">12.3%</div>
+                                    <div class="text-xs text-gray-400">Portfolio weight</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                                        <span class="text-white font-bold">SOXL</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">Direxion Daily Semiconductor</div>
+                                        <div class="text-sm text-gray-400">Leveraged ETF</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-red-400">15.7%</div>
+                                    <div class="text-xs text-gray-400">Portfolio weight</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                        <span class="text-white font-bold">TECL</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">Direxion Daily Tech Bull</div>
+                                        <div class="text-sm text-gray-400">Leveraged ETF</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-orange-400">11.2%</div>
+                                    <div class="text-xs text-gray-400">Portfolio weight</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Risk Metrics</h3>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-blue-300">Portfolio Beta</span>
+                                    <span class="text-lg font-bold mono text-blue-400">1.87</span>
+                                </div>
+                                <div class="text-xs text-gray-400">vs S&P 500 (1.0 baseline)</div>
+                            </div>
+
+                            <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-green-300">Diversification Ratio</span>
+                                    <span class="text-lg font-bold mono text-green-400">0.73</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Lower = More diversified</div>
+                            </div>
+
+                            <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-red-300">Maximum Drawdown Risk</span>
+                                    <span class="text-lg font-bold mono text-red-400">-42%</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Based on historical stress test</div>
+                            </div>
+
+                            <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-yellow-300">Liquidity Risk</span>
+                                    <span class="text-lg font-bold mono text-yellow-400">Medium</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Leveraged ETF exposure</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-gray-900/50 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="text-gray-400 mb-4">
+                <p class="text-sm">AI Bubble Health Dashboard - Real-time market risk assessment</p>
+                <p class="text-xs mt-2">Data sources: Yahoo Finance, Alpha Vantage, NewsAPI | Last updated: <span id="last-updated">2025-12-16 15:30:00</span></p>
+            </div>
+            <div class="flex justify-center space-x-6 text-xs text-gray-500">
+                <span>© 2025 AI Bubble Dashboard</span>
+                <span>•</span>
+                <span>For educational purposes only</span>
+                <span>•</span>
+                <span>Not investment advice</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeExposureSpiderChart();
+            initializeETFPerformanceChart();
+            initializeCorrelationHeatmap();
+            initializeLeverageChart();
+            initializeAnimations();
+        });
+
+        function initializeExposureSpiderChart() {
+            const chart = echarts.init(document.getElementById('exposure-spider-chart'));
+            const option = {
+                backgroundColor: 'transparent',
+                radar: {
+                    indicator: [
+                        { name: 'Market Beta', max: 3 },
+                        { name: 'Sector Concentration', max: 100 },
+                        { name: 'Leverage', max: 5 },
+                        { name: 'Liquidity Risk', max: 100 },
+                        { name: 'Volatility', max: 100 },
+                        { name: 'Correlation Risk', max: 100 }
+                    ],
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [{
+                    name: 'Portfolio A',
+                    type: 'radar',
+                    data: [{
+                        value: [1.87, 75, 4.2, 65, 85, 80],
+                        name: 'Current Portfolio',
+                        itemStyle: { color: '#00d4ff' },
+                        areaStyle: { color: 'rgba(0, 212, 255, 0.2)' }
+                    }, {
+                        value: [1.0, 40, 1.0, 30, 45, 35],
+                        name: 'Benchmark',
+                        itemStyle: { color: '#4ecdc4' },
+                        areaStyle: { color: 'rgba(78, 205, 196, 0.1)' }
+                    }]
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeETFPerformanceChart() {
+            const chart = echarts.init(document.getElementById('etf-performance-chart'));
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ['1M', '3M', '6M', 'YTD', '1Y'],
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Return (%)',
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [
+                    {
+                        name: 'SOXL',
+                        type: 'line',
+                        data: [45, 78, 125, 156, 234],
+                        lineStyle: { color: '#ff6b6b', width: 3 },
+                        itemStyle: { color: '#ff6b6b' }
+                    },
+                    {
+                        name: 'TECL',
+                        type: 'line',
+                        data: [38, 65, 98, 134, 189],
+                        lineStyle: { color: '#ffb800', width: 3 },
+                        itemStyle: { color: '#ffb800' }
+                    },
+                    {
+                        name: 'SOXX',
+                        type: 'line',
+                        data: [18, 28, 42, 58, 87],
+                        lineStyle: { color: '#00d4ff', width: 3 },
+                        itemStyle: { color: '#00d4ff' }
+                    },
+                    {
+                        name: 'XLK',
+                        type: 'line',
+                        data: [12, 18, 28, 38, 52],
+                        lineStyle: { color: '#4ecdc4', width: 3 },
+                        itemStyle: { color: '#4ecdc4' }
+                    }
+                ]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeCorrelationHeatmap() {
+            const chart = echarts.init(document.getElementById('correlation-heatmap'));
+            const symbols = ['NVDA', 'MSFT', 'AMD', 'SOXX', 'SOXL', 'TECL'];
+            const data = [];
+            
+            for (let i = 0; i < symbols.length; i++) {
+                for (let j = 0; j < symbols.length; j++) {
+                    const correlation = i === j ? 1 : 0.6 + Math.random() * 0.3;
+                    data.push([i, j, correlation.toFixed(2)]);
+                }
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    position: 'top',
+                    formatter: function(params) {
+                        return `${symbols[params.data[0]]} vs ${symbols[params.data[1]]}<br/>Correlation: ${params.data[2]}`;
+                    }
+                },
+                grid: {
+                    height: '50%',
+                    top: '10%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: symbols,
+                    splitArea: { show: true },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: symbols,
+                    splitArea: { show: true },
+                    axisLabel: { color: '#6c757d' }
+                },
+                visualMap: {
+                    min: 0,
+                    max: 1,
+                    calculable: true,
+                    orient: 'horizontal',
+                    left: 'center',
+                    bottom: '15%',
+                    inRange: {
+                        color: ['#ff6b6b', '#ffb800', '#4ecdc4']
+                    }
+                },
+                series: [{
+                    name: 'Correlation',
+                    type: 'heatmap',
+                    data: data,
+                    label: {
+                        show: true,
+                        color: '#fff'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeLeverageChart() {
+            const chart = echarts.init(document.getElementById('leverage-chart'));
+            const option = {
+                backgroundColor: 'transparent',
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ['SOXL', 'TECL', 'TQQQ', 'UPRO', 'FNGU'],
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Leverage Multiple',
+                    axisLine: { lineStyle: { color: '#6c757d' } },
+                    axisLabel: { color: '#6c757d' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                series: [{
+                    data: [3.2, 2.8, 3.0, 3.0, 2.5],
+                    type: 'bar',
+                    itemStyle: {
+                        color: function(params) {
+                            const colors = ['#ff6b6b', '#ffb800', '#00d4ff', '#4ecdc4', '#9d4edd'];
+                            return colors[params.dataIndex];
+                        }
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        function initializeAnimations() {
+            const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        anime({
+                            targets: entry.target,
+                            translateY: [20, 0],
+                            opacity: [0, 1],
+                            duration: 800,
+                            easing: 'easeOutQuart'
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.exposure-card').forEach(card => {
+                observer.observe(card);
+            });
+        }
+
+        // Update timestamp
+        function updateLastUpdated() {
+            const element = document.getElementById('last-updated');
+            if (element) {
+                const now = new Date();
+                element.textContent = now.toISOString().replace('T', ' ').substring(0, 19);
+            }
+        }
+
+        // Initialize
+        updateLastUpdated();
+        setInterval(updateLastUpdated, 1000);
+
+        // Add click handlers
+        document.getElementById('portfolio-a').addEventListener('click', function() {
+            alert('Portfolio A selected');
+        });
+        document.getElementById('portfolio-b').addEventListener('click', function() {
+            alert('Portfolio B selected');
+        });
+    </script>
+</body>
+</html>
