@@ -670,7 +670,14 @@ class AIBubbleDashboard:
             
             for metric, value in sentiment_data.items():
                 color = "green" if "+" in value or "/10" in value else "red" if "Detected" in value else "yellow"
-                st.metric(metric, value, text_color=color)
+                st.markdown(
+                    f"""
+                    <div style="color:{color}; font-size:24px; font-weight:bold;">
+                        {metric}: {value}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             
             st.markdown("### Trending Topics")
             
